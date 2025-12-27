@@ -7,6 +7,14 @@ A full-stack freelance marketplace application built with the MERN stack, inspir
 - **Frontend:** [https://gigs-hub-one.vercel.app](https://gigs-hub-one.vercel.app)
 - **Backend API:** [https://gigshub-jy7k.onrender.com](https://gigshub-jy7k.onrender.com)
 
+## Screenshots
+<img width="1503" height="702" alt="image" src="https://github.com/user-attachments/assets/214b7ac2-cefb-4015-bac9-d418f735a8b5" />
+<img width="1477" height="765" alt="image" src="https://github.com/user-attachments/assets/848821cf-4051-415c-94c1-72ff9e46130b" />
+<img width="1486" height="764" alt="image" src="https://github.com/user-attachments/assets/22b6c708-63bb-4a47-93fb-8e871735997f" />
+<img width="1444" height="778" alt="image" src="https://github.com/user-attachments/assets/5a83a501-853c-4ab7-8605-37238bac5625" />
+<img width="1429" height="722" alt="image" src="https://github.com/user-attachments/assets/33b295ee-95c7-4f42-9220-13e2bd396cfb" />
+<img width="1421" height="775" alt="image" src="https://github.com/user-attachments/assets/004940e4-3f62-42ba-b65f-aed2aca23b29" />
+
 ## ✨ Features
 
 - **User Authentication** - Register and login with JWT authentication
