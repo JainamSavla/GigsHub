@@ -182,14 +182,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📄 License
 
 This project is open source and available under the MIT License.
-
-## 👨‍💻 Author
-
 **Jainam Savla**
 - GitHub: [@JainamSavla](https://github.com/JainamSavla)
 
-## 🙏 Acknowledgments
-
-- Inspired by Fiverr
-- Built following MERN stack best practices
-- Thanks to all contributors and supporters
