@@ -18,6 +18,16 @@
         font-family: "Roboto", sans-serif;
       }
     </style>
+    <script>
+      // Suppress SES lockdown warnings from Stripe
+      if (typeof console !== 'undefined' && console.warn) {
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+          if (args[0] && typeof args[0] === 'string' && args[0].includes('SES')) return;
+          originalWarn.apply(console, args);
+        };
+      }
+    </script>
     <title>React App</title>
   </head>
   <body>
