@@ -39,6 +39,10 @@ jobs:
   codeql-analysis:
     runs-on: ubuntu-latest
     needs: vitest-tests
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
     defaults:
       run:
         working-directory: client
