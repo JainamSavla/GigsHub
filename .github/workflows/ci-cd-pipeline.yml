@@ -1,0 +1,193 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, devops]
+  pull_request:
+    branches: [main]
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+jobs:
+  # Stage 1: Checkout and Tool Install
+  setup:
+    name: Setup and Check Changes
+    runs-on: ubuntu-latest
+    outputs:
+      client-changed: ${{ steps.changes.outputs.client }}
+      api-changed: ${{ steps.changes.outputs.api }}
+    steps:
+      - name: Checkout SCM
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            client:
+              - 'client/**'
+            api:
+              - 'api/**'
+
+      - name: Tool Install
+        run: |
+          echo "Installing required tools..."
+          docker --version
+          node --version
+          npm --version
+
+  # Stage 2: Build and Scan Client
+  client-pipeline:
+    name: Client Build & Scan
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.client-changed == 'true' || github.ref == 'refs/heads/devops'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./client
+        run: npm ci --legacy-peer-deps
+
+      - name: Run Lint
+        working-directory: ./client
+        run: npm run lint
+
+      - name: Run Prettier Check
+        working-directory: ./client
+        run: npm run format:check
+
+      - name: SonarQube Scan - Client
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ./client
+          args: >
+            -Dsonar.organization=jainamsavla
+            -Dsonar.projectKey=jainamsavla_gigshub_client
+            -Dsonar.sources=src
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      - name: Build Docker Image - Client
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/gigshub-client:${{ github.sha }} \
+                       -t ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest \
+                       ./client
+
+      - name: Trivy Security Scan - Client
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest
+          format: 'sarif'
+          output: 'trivy-client-results.sarif'
+
+      - name: Upload Trivy Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-client-results.sarif'
+          category: 'trivy-client'
+
+      - name: Push to DockerHub - Client
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devops'
+        run: |
+          echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/gigshub-client:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest
+          docker logout
+
+  # Stage 3: Build and Scan API
+  api-pipeline:
+    name: API Build & Scan
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.api-changed == 'true' || github.ref == 'refs/heads/devops'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./api
+        run: npm ci
+
+      - name: SonarQube Scan - API
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ./api
+          args: >
+            -Dsonar.organization=jainamsavla
+            -Dsonar.projectKey=jainamsavla_gigshub_api
+            -Dsonar.sources=.
+            -Dsonar.exclusions=node_modules/**
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      - name: Build Docker Image - API
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/gigshub-api:${{ github.sha }} \
+                       -t ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest \
+                       ./api
+
+      - name: Trivy Security Scan - API
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest
+          format: 'sarif'
+          output: 'trivy-api-results.sarif'
+
+      - name: Upload Trivy Results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-api-results.sarif'
+          category: 'trivy-api'
+
+      - name: Push to DockerHub - API
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devops'
+        run: |
+          echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/gigshub-api:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest
+          docker logout
+
+  # Stage 4: Post Actions
+  post-actions:
+    name: Post Actions
+    runs-on: ubuntu-latest
+    needs: [client-pipeline, api-pipeline]
+    if: always()
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "## Pipeline Execution Summary 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Client Pipeline: ${{ needs.client-pipeline.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ API Pipeline: ${{ needs.api-pipeline.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🐳 Docker images pushed to DockerHub" >> $GITHUB_STEP_SUMMARY
+          echo "🔒 Security scans completed with Trivy" >> $GITHUB_STEP_SUMMARY
+          echo "📊 Code quality analyzed with SonarCloud" >> $GITHUB_STEP_SUMMARY

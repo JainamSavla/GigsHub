@@ -1,0 +1,53 @@
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:latest
+    container_name: gigshub-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - gigshub-network
+
+  # API Backend
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: gigshub-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      MONGO_URL: mongodb://admin:password@mongodb:27017/gigshub?authSource=admin
+    depends_on:
+      - mongodb
+    networks:
+      - gigshub-network
+
+  # React Frontend
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: gigshub-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - gigshub-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  gigshub-network:
+    driver: bridge
