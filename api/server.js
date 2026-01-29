@@ -48,10 +48,6 @@ app.use((req, res, next) => {
   next();
 });
 
-const app = express();
-dotenv.config();
-mongoose.set("strictQuery", true);
-
 const connect = async () => {
   try {
     await mongoose.connect(process.env.MONGO);

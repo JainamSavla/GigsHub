@@ -25,7 +25,9 @@ services:
       - "5000:5000"
     environment:
       NODE_ENV: production
-      MONGO_URL: mongodb://admin:password@mongodb:27017/gigshub?authSource=admin
+      MONGO: mongodb://admin:password@mongodb:27017/gigshub?authSource=admin
+      PORT: 5000
+      JWT_SECRET: your-secret-key-change-this-in-production
     depends_on:
       - mongodb
     networks:
@@ -95,7 +97,7 @@ services:
 
   # MongoDB Exporter for database metrics
   mongodb-exporter:
-    image: percona/mongodb_exporter:latest
+    image: bitnami/mongodb-exporter:latest
     container_name: gigshub-mongodb-exporter
     restart: unless-stopped
     ports:
