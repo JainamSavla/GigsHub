@@ -59,7 +59,7 @@ function Gigs() {
             {open && (
               <div className="rightMenu">
                 {sort === "sales" ? (
-                  <span onClick={() => reSort("createdAt")}>Newest</span>
+                  <span onClick={() => reSort("createdAt")}>Latest</span>
                 ) : (
                   <span onClick={() => reSort("sales")}>Best Selling</span>
                 )}
