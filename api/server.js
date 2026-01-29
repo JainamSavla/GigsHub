@@ -10,6 +10,43 @@ import reviewRoute from "./routes/review.route.js";
 import authRoute from "./routes/auth.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import promClient from "prom-client";
+
+const app = express();
+dotenv.config();
+mongoose.set("strictQuery", true);
+
+// Prometheus metrics setup
+const register = new promClient.Registry();
+promClient.collectDefaultMetrics({ register });
+
+// Custom metrics
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_ms',
+  help: 'Duration of HTTP requests in milliseconds',
+  labelNames: ['method', 'route', 'status'],
+  buckets: [50, 100, 200, 500, 1000, 2000, 5000]
+});
+
+const httpRequestTotal = new promClient.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status']
+});
+
+register.registerMetric(httpRequestDuration);
+register.registerMetric(httpRequestTotal);
+
+// Middleware to track metrics
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    httpRequestDuration.labels(req.method, req.route?.path || req.path, res.statusCode).observe(duration);
+    httpRequestTotal.labels(req.method, req.route?.path || req.path, res.statusCode).inc();
+  });
+  next();
+});
 
 const app = express();
 dotenv.config();
@@ -43,6 +80,18 @@ app.use("/api/orders", orderRoute);
 app.use("/api/conversations", conversationRoute);
 app.use("/api/messages", messageRoute);
 app.use("/api/reviews", reviewRoute);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
+// Metrics endpoint for Prometheus
+app.get("/metrics", async (req, res) => {
+  res.setHeader('Content-Type', register.contentType);
+  const metrics = await register.metrics();
+  res.send(metrics);
+});
 
 app.use((err, req, res, next) => {
   const errorStatus = err.status || 500;

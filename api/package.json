@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.9.2",
     "nodemon": "^2.0.20",
+    "prom-client": "^15.1.0",
     "stripe": "^11.11.0"
   }
 }
