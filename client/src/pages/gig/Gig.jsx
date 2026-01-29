@@ -42,7 +42,7 @@ function Gig() {
         <div className="container">
           <div className="left">
             <span className="breadcrumbs">
-              GigsHub {">"} Graphics & Design {">"}
+              GigsHub {">"} Graphics and Design {">"}
             </span>
             <h1>{data.title}</h1>
             {isLoadingUser ? (
