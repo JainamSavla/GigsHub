@@ -30,11 +30,10 @@
           text-align: left;
         }
         td {
-
-          sup{
+          sup {
             font-size: 12px;
           }
-          
+
           .image {
             width: 50px;
             height: 25px;
@@ -45,7 +44,6 @@
             width: 20px;
             cursor: pointer;
           }
-
         }
         &:nth-child(even) {
           background-color: #1dbf730f;

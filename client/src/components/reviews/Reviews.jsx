@@ -4,8 +4,7 @@ import newRequest from "../../utils/newRequest";
 import Review from "../review/Review";
 import "./Reviews.scss";
 const Reviews = ({ gigId }) => {
-
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   const { isLoading, error, data } = useQuery({
     queryKey: ["reviews"],
     queryFn: () =>
@@ -18,9 +17,9 @@ const Reviews = ({ gigId }) => {
     mutationFn: (review) => {
       return newRequest.post("/reviews", review);
     },
-    onSuccess:()=>{
-      queryClient.invalidateQueries(["reviews"])
-    }
+    onSuccess: () => {
+      queryClient.invalidateQueries(["reviews"]);
+    },
   });
 
   const handleSubmit = (e) => {
@@ -36,8 +35,8 @@ const Reviews = ({ gigId }) => {
       {isLoading
         ? "loading"
         : error
-        ? "Something went wrong!"
-        : data.map((review) => <Review key={review._id} review={review} />)}
+          ? "Something went wrong!"
+          : data.map((review) => <Review key={review._id} review={review} />)}
       <div className="add">
         <h3>Add a review</h3>
         <form action="" className="addForm" onSubmit={handleSubmit}>

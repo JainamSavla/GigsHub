@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -20,10 +20,11 @@
     </style>
     <script>
       // Suppress SES lockdown warnings from Stripe
-      if (typeof console !== 'undefined' && console.warn) {
+      if (typeof console !== "undefined" && console.warn) {
         const originalWarn = console.warn;
-        console.warn = function(...args) {
-          if (args[0] && typeof args[0] === 'string' && args[0].includes('SES')) return;
+        console.warn = function (...args) {
+          if (args[0] && typeof args[0] === "string" && args[0].includes("SES"))
+            return;
           originalWarn.apply(console, args);
         };
       }

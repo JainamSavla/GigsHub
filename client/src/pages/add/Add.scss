@@ -37,12 +37,12 @@
           padding: 20px;
         }
 
-        .images{
+        .images {
           display: flex;
           align-items: center;
           gap: 20px;
 
-          .imagesInputs{
+          .imagesInputs {
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -59,20 +59,20 @@
           cursor: pointer;
         }
 
-        .add{
+        .add {
           display: flex;
           justify-content: space-between;
 
-          input{
+          input {
             width: 80%;
           }
         }
 
-        .addedFeatures{
+        .addedFeatures {
           display: flex;
           gap: 20px;
 
-          button{
+          button {
             height: 30px;
             font-size: 12px;
             font-weight: 400;
