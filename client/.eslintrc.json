@@ -5,19 +5,18 @@
     },
     "extends": [
         "eslint:recommended",
-        "plugin:react/recommended"
-    ],
-    "overrides": [
+        "plugin:react/recommended",
+        "plugin:prettier/recommended"
     ],
     "parserOptions": {
-        "ecmaVersion": "latest",
+        "ecmaFeatures": {
+            "jsx": true
+        },
+        "ecmaVersion": 12,
         "sourceType": "module"
     },
     "plugins": [
         "react"
     ],
-    "rules": {
-      "no-unused-vars": "warn",
-      "react/prop-types": "off"
-    }
+    "rules": {}
 }
