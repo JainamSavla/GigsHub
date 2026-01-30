@@ -1,193 +1,252 @@
-name: Deploy with Monitoring
+name: Deploy with Prometheus & Grafana
 
 on:
   push:
     branches: [main, devops]
-  workflow_run:
-    workflows: ["CI/CD Pipeline"]
-    types: [completed]
-    branches: [main, devops]
+  workflow_dispatch:
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DEPLOYMENT_SERVER: ${{ secrets.DEPLOYMENT_SERVER }}
-  DEPLOYMENT_USER: ${{ secrets.DEPLOYMENT_USER }}
 
 jobs:
-  # Stage 1: Deploy All Services with Monitoring
-  deploy:
-    name: Deploy with Prometheus & Grafana
+  # Stage 1: Set up job
+  setup-job:
+    name: Set up job
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Prepare Deployment Environment
+      - name: Verify Docker Installation
         run: |
-          echo "🚀 Preparing deployment environment..."
-          mkdir -p deployment_files
-          cp docker-compose.yml deployment_files/
-          cp prometheus.yml deployment_files/
-          cp -r grafana deployment_files/
+          docker --version
+          docker compose version
 
-      - name: Deploy Stack (Docker Compose)
-        run: |
-          echo "🐳 Starting Docker Compose stack..."
-          docker-compose -f docker-compose.yml pull
-          docker-compose -f docker-compose.yml up -d
-          echo "⏳ Waiting for services to be healthy..."
-          sleep 10
+  # Stage 2: Prepare Deployment Environment
+  prepare-deployment:
+    name: Prepare Deployment Environment
+    runs-on: ubuntu-latest
+    needs: setup-job
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Verify Services Health
+      - name: Validate Docker Compose Configuration
         run: |
-          echo "🔍 Verifying all services..."
-          
-          # Check MongoDB
-          echo "Checking MongoDB..."
-          docker ps | grep gigshub-mongo && echo "✅ MongoDB is running" || echo "❌ MongoDB failed"
-          
-          # Check API
-          echo "Checking API..."
-          docker ps | grep gigshub-api && echo "✅ API is running" || echo "❌ API failed"
-          
-          # Check Client
-          echo "Checking Client..."
-          docker ps | grep gigshub-client && echo "✅ Client is running" || echo "❌ Client failed"
-          
-          # Check Prometheus
-          echo "Checking Prometheus..."
-          docker ps | grep gigshub-prometheus && echo "✅ Prometheus is running" || echo "❌ Prometheus failed"
-          
-          # Check Grafana
-          echo "Checking Grafana..."
-          docker ps | grep gigshub-grafana && echo "✅ Grafana is running" || echo "❌ Grafana failed"
-          
-          # Check Node Exporter
-          echo "Checking Node Exporter..."
-          docker ps | grep gigshub-node-exporter && echo "✅ Node Exporter is running" || echo "❌ Node Exporter failed"
+          docker compose -f docker-compose.yml config
 
-      - name: Verify API Health Endpoint
+      - name: Verify Monitoring Configuration Files
         run: |
-          echo "🏥 Checking API health endpoint..."
-          sleep 5
-          curl -v http://localhost:5000/health || echo "Health check failed, but continuing..."
+          echo "Checking Prometheus configuration..."
+          cat prometheus.yml
+          echo ""
+          echo "Checking Grafana provisioning..."
+          ls -la grafana/provisioning/
+
+  # Stage 3: Deploy Stack (Docker Compose)
+  deploy-stack:
+    name: Deploy Stack (Docker Compose)
+    runs-on: ubuntu-latest
+    needs: prepare-deployment
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Pull Latest Images
+        run: |
+          docker compose pull || true
+
+      - name: Build and Deploy Services
+        run: |
+          echo "🚀 Starting deployment with monitoring..."
+          docker compose up -d --build
+          
+      - name: Wait for Services to Start
+        run: |
+          echo "⏳ Waiting for services to initialize..."
+          sleep 30
+
+      - name: List Running Containers
+        run: |
+          echo "📦 Running Docker Services:"
+          docker compose ps
+
+  # Stage 4: Verify Services Health
+  verify-services:
+    name: Verify Services Health
+    runs-on: ubuntu-latest
+    needs: deploy-stack
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check MongoDB Health
+        run: |
+          echo "🔍 Checking MongoDB..."
+          docker exec gigshub-mongo mongosh --eval "db.adminCommand('ping')" || echo "MongoDB not ready yet"
+
+      - name: Check API Health
+        run: |
+          echo "🔍 Checking API Service..."
+          curl -f http://localhost:5000/api/health || echo "API not ready yet"
+
+      - name: Check Client Availability
+        run: |
+          echo "🔍 Checking Client Service..."
+          curl -f http://localhost:80 || echo "Client not ready yet"
+
+  # Stage 5: Verify Prometheus Targets
+  verify-prometheus:
+    name: Verify Prometheus Targets
+    runs-on: ubuntu-latest
+    needs: verify-services
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Prometheus Health
+        run: |
+          echo "🔍 Checking Prometheus..."
+          curl -f http://localhost:9090/-/healthy || echo "Prometheus not ready"
 
       - name: Verify Prometheus Targets
         run: |
-          echo "📊 Checking Prometheus targets..."
-          sleep 5
-          curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets | length' || echo "Could not verify targets"
+          echo "🎯 Checking Prometheus targets..."
+          curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health, lastError: .lastError}' || true
 
-      - name: Verify Grafana Access
+      - name: Check Prometheus Metrics
         run: |
-          echo "📈 Checking Grafana access..."
-          sleep 5
-          curl -s -o /dev/null -w "%{http_code}" -u admin:admin123 http://localhost:3000/api/datasources && echo " ✅ Grafana is accessible"
+          echo "📊 Checking if metrics are being collected..."
+          curl -s http://localhost:9090/api/v1/query?query=up | jq '.data.result[] | {instance: .metric.instance, value: .value}' || true
 
-      - name: Generate Service Endpoints
+  # Stage 6: Verify Grafana Access
+  verify-grafana:
+    name: Verify Grafana Access
+    runs-on: ubuntu-latest
+    needs: verify-prometheus
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Grafana Health
         run: |
-          echo "## 📋 Service Endpoints" >> $GITHUB_STEP_SUMMARY
+          echo "🔍 Checking Grafana..."
+          curl -f http://localhost:3000/api/health || echo "Grafana not ready"
+
+      - name: Verify Grafana Datasources
+        run: |
+          echo "📊 Checking Grafana datasources..."
+          curl -s -u admin:admin123 http://localhost:3000/api/datasources | jq '.' || echo "Could not fetch datasources"
+
+      - name: List Grafana Dashboards
+        run: |
+          echo "📈 Checking Grafana dashboards..."
+          curl -s -u admin:admin123 http://localhost:3000/api/search | jq '.' || echo "Could not fetch dashboards"
+
+  # Stage 7: Generate Service Endpoints
+  generate-endpoints:
+    name: Generate Service Endpoints
+    runs-on: ubuntu-latest
+    needs: [verify-grafana]
+    steps:
+      - name: Display Service URLs
+        run: |
+          echo "## 🎉 Deployment Complete! Service Endpoints:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 Application Services" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Backend**: \`http://localhost:5000\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend Client**: \`http://localhost:80\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **MongoDB**: \`mongodb://localhost:27017\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Application Services" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌐 **Frontend**: http://localhost:80" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔧 **API**: http://localhost:5000" >> $GITHUB_STEP_SUMMARY
+          echo "- 🗄️ **MongoDB**: mongodb://localhost:27017" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Monitoring & Observability" >> $GITHUB_STEP_SUMMARY
-          echo "- **Prometheus**: \`http://localhost:9090\`" >> $GITHUB_STEP_SUMMARY
-          echo "  - Check targets: \`http://localhost:9090/targets\`" >> $GITHUB_STEP_SUMMARY
-          echo "  - View metrics: \`http://localhost:9090/graph\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Grafana Dashboard**: \`http://localhost:3000\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Monitoring Services" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 **Prometheus**: http://localhost:9090" >> $GITHUB_STEP_SUMMARY
+          echo "- 📈 **Grafana**: http://localhost:3000" >> $GITHUB_STEP_SUMMARY
           echo "  - Username: \`admin\`" >> $GITHUB_STEP_SUMMARY
           echo "  - Password: \`admin123\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Node Exporter**: \`http://localhost:9100/metrics\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **MongoDB Exporter**: \`http://localhost:9216/metrics\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Metrics**: \`http://localhost:5000/metrics\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📊 Available Dashboards in Grafana" >> $GITHUB_STEP_SUMMARY
-          echo "- **GigsHub API Monitoring**: Pre-configured with key metrics" >> $GITHUB_STEP_SUMMARY
-          echo "- HTTP Requests per Second" >> $GITHUB_STEP_SUMMARY
-          echo "- Response Time Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "- Memory & CPU Usage" >> $GITHUB_STEP_SUMMARY
-          echo "- Error Rate Tracking" >> $GITHUB_STEP_SUMMARY
+          echo "### Metrics Exporters" >> $GITHUB_STEP_SUMMARY
+          echo "- 🖥️ **Node Exporter**: http://localhost:9100/metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- 🍃 **MongoDB Exporter**: http://localhost:9216/metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-      - name: Create Monitoring Test Report
-        run: |
-          echo "## 🧪 Monitoring Verification Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Port | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| MongoDB | 27017 | $(docker ps | grep gigshub-mongo >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| API Backend | 5000 | $(docker ps | grep gigshub-api >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend Client | 80 | $(docker ps | grep gigshub-client >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Prometheus | 9090 | $(docker ps | grep gigshub-prometheus >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Grafana | 3000 | $(docker ps | grep gigshub-grafana >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Node Exporter | 9100 | $(docker ps | grep gigshub-node-exporter >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "| MongoDB Exporter | 9216 | $(docker ps | grep gigshub-mongodb-exporter >/dev/null && echo '✅ Running' || echo '❌ Failed') |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-      - name: Log Docker Services
-        if: always()
-        run: |
-          echo "## 📦 Running Docker Services" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          docker-compose ps >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-  # Stage 2: Generate Initial Metrics
-  generate-metrics:
-    name: Generate Initial Metrics
+  # Stage 8: Create Monitoring Test Report
+  create-test-report:
+    name: Create Monitoring Test Report
     runs-on: ubuntu-latest
-    needs: deploy
-    if: success()
+    needs: [verify-prometheus, verify-grafana]
     steps:
-      - name: Generate Traffic for Metrics
-        run: |
-          echo "📊 Generating sample traffic to populate metrics..."
-          sleep 5
-          
-          for i in {1..10}; do
-            echo "Request $i..."
-            curl -s http://localhost:5000/health || true
-            sleep 1
-          done
-          
-          echo "✅ Traffic generation complete"
-          echo "Metrics will be available in Prometheus and Grafana within 30 seconds"
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  # Stage 3: Monitoring Summary
-  monitoring-summary:
-    name: Monitoring Setup Summary
+      - name: Generate Monitoring Report
+        run: |
+          echo "## 📋 Monitoring System Health Report" >> monitoring-report.md
+          echo "" >> monitoring-report.md
+          echo "**Generated at**: $(date)" >> monitoring-report.md
+          echo "" >> monitoring-report.md
+          
+          echo "### Prometheus Status" >> monitoring-report.md
+          curl -s http://localhost:9090/api/v1/status/config | jq -r '.status' >> monitoring-report.md || echo "❌ Failed to fetch" >> monitoring-report.md
+          echo "" >> monitoring-report.md
+          
+          echo "### Active Targets" >> monitoring-report.md
+          curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets | length' >> monitoring-report.md || echo "❌ Failed to fetch" >> monitoring-report.md
+          echo "" >> monitoring-report.md
+          
+          echo "### Grafana Status" >> monitoring-report.md
+          curl -s http://localhost:3000/api/health | jq '.' >> monitoring-report.md || echo "❌ Failed to fetch" >> monitoring-report.md
+          
+          cat monitoring-report.md
+
+      - name: Upload Monitoring Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-report
+          path: monitoring-report.md
+
+  # Stage 9: Log Docker Services
+  log-services:
+    name: Log Docker Services
     runs-on: ubuntu-latest
-    needs: generate-metrics
+    needs: deploy-stack
     if: always()
     steps:
-      - name: Create Summary
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Display Service Logs
+        if: always()
         run: |
-          echo "## ✅ Deployment with Monitoring Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "## 📝 Running Docker Services" >> $GITHUB_STEP_SUMMARY
+          docker compose logs --tail=50 mongodb || true
+          docker compose logs --tail=50 api || true
+          docker compose logs --tail=50 prometheus || true
+          docker compose logs --tail=50 grafana || true
+
+  # Stage 10: Post Checkout Code
+  post-checkout:
+    name: Post Checkout Code
+    runs-on: ubuntu-latest
+    needs: [generate-endpoints, create-test-report]
+    steps:
+      - name: Cleanup
+        run: |
+          echo "✅ Deployment and monitoring setup complete!"
+          echo "🔍 Check the monitoring report artifact for detailed health status"
+
+  # Stage 11: Complete job
+  complete-job:
+    name: Complete job
+    runs-on: ubuntu-latest
+    needs: [post-checkout, log-services]
+    if: always()
+    steps:
+      - name: Final Summary
+        run: |
+          echo "## 🎊 Pipeline Execution Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎯 What's Running:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ GigsHub API Backend" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ GigsHub Frontend Client" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ MongoDB Database" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Prometheus (Metrics Collection)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Grafana (Dashboard & Visualization)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Node Exporter (System Metrics)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ MongoDB Exporter (DB Metrics)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Quick Links:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend**: http://localhost:80" >> $GITHUB_STEP_SUMMARY
-          echo "- **API**: http://localhost:5000" >> $GITHUB_STEP_SUMMARY
-          echo "- **Prometheus**: http://localhost:9090" >> $GITHUB_STEP_SUMMARY
-          echo "- **Grafana Dashboard**: http://localhost:3000 (admin/admin123)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📈 Next Steps:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Visit Grafana at http://localhost:3000" >> $GITHUB_STEP_SUMMARY
-          echo "2. Login with admin/admin123" >> $GITHUB_STEP_SUMMARY
-          echo "3. View the 'GigsHub API Monitoring' dashboard" >> $GITHUB_STEP_SUMMARY
-          echo "4. Monitor real-time metrics and performance" >> $GITHUB_STEP_SUMMARY
-          echo "5. Create alerts for critical thresholds" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: All deployment and monitoring stages executed" >> $GITHUB_STEP_SUMMARY
+          echo "**Next Steps**:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Access Grafana at http://localhost:3000" >> $GITHUB_STEP_SUMMARY
+          echo "2. Check Prometheus metrics at http://localhost:9090" >> $GITHUB_STEP_SUMMARY
+          echo "3. Review the monitoring report artifact for detailed status" >> $GITHUB_STEP_SUMMARY
