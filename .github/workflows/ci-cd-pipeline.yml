@@ -94,6 +94,13 @@ jobs:
                        -t ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest \
                        ./client
 
+      - name: Trivy Security Scan - Client (Table Output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
       - name: Trivy Security Scan - Client (SARIF)
         uses: aquasecurity/trivy-action@master
         with:
@@ -187,6 +194,13 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/gigshub-api:${{ github.sha }} \
                        -t ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest \
                        ./api
+
+      - name: Trivy Security Scan - API (Table Output)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Trivy Security Scan - API (SARIF)
         uses: aquasecurity/trivy-action@master
