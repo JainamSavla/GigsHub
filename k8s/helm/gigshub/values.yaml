@@ -30,9 +30,9 @@ api:
   enabled: true
   replicaCount: 2
   image:
-    repository: jainamsavla/gigshub-api
-    tag: latest
-    pullPolicy: Always
+    repository: gigshub-api
+    tag: local
+    pullPolicy: Never
   service:
     type: ClusterIP
     port: 5000
@@ -53,9 +53,9 @@ client:
   enabled: true
   replicaCount: 2
   image:
-    repository: jainamsavla/gigshub-client
-    tag: latest
-    pullPolicy: Always
+    repository: gigshub-client
+    tag: local
+    pullPolicy: Never
   service:
     type: LoadBalancer
     port: 80

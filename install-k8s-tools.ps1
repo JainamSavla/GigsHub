@@ -76,7 +76,7 @@ Write-Host ""
 Write-Host "Next Steps:" -ForegroundColor Yellow
 Write-Host "1. Enable Kubernetes in Docker Desktop:" -ForegroundColor White
 Write-Host "   - Open Docker Desktop" -ForegroundColor Gray
-Write-Host "   - Settings > Kubernetes > Enable Kubernetes" -ForegroundColor Gray
+Write-Host "   - Settings -> Kubernetes -> Enable Kubernetes" -ForegroundColor Gray
 Write-Host ""
 Write-Host "2. Wait for Kubernetes to start (2-5 minutes)" -ForegroundColor White
 Write-Host ""
