@@ -1,0 +1,18 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gigshub.fullname" . }}-mongodb
+  labels:
+    app: mongodb
+    {{- include "gigshub.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.mongodb.service.type }}
+  ports:
+  - port: {{ .Values.mongodb.service.port }}
+    targetPort: 27017
+    protocol: TCP
+    name: mongodb
+  selector:
+    app: mongodb
+{{- end }}

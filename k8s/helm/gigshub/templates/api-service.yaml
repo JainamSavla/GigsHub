@@ -1,0 +1,18 @@
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gigshub.fullname" . }}-api
+  labels:
+    app: api
+    {{- include "gigshub.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+  - port: {{ .Values.api.service.port }}
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  selector:
+    app: api
+{{- end }}

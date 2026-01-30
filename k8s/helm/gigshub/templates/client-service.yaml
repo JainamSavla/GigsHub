@@ -1,0 +1,18 @@
+{{- if .Values.client.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gigshub.fullname" . }}-client
+  labels:
+    app: client
+    {{- include "gigshub.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.client.service.type }}
+  ports:
+  - port: {{ .Values.client.service.port }}
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: client
+{{- end }}
