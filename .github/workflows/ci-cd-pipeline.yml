@@ -94,19 +94,45 @@ jobs:
                        -t ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest \
                        ./client
 
-      - name: Trivy Security Scan - Client
+      - name: Trivy Security Scan - Client (SARIF)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest
           format: 'sarif'
           output: 'trivy-client-results.sarif'
 
-      - name: Upload Trivy Results
+      - name: Trivy Security Scan - Client (HTML Report)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest
+          format: 'html'
+          output: 'trivy-client-report.html'
+
+      - name: Trivy Security Scan - Client (JSON Report)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-client:latest
+          format: 'json'
+          output: 'trivy-client-report.json'
+
+      - name: Upload Trivy Results to Security
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-client-results.sarif'
           category: 'trivy-client'
+
+      - name: Upload Trivy Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-client-reports
+          path: |
+            trivy-client-report.html
+            trivy-client-report.json
+          retention-days: 30
 
       - name: Push to DockerHub - Client
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devops'
@@ -162,19 +188,45 @@ jobs:
                        -t ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest \
                        ./api
 
-      - name: Trivy Security Scan - API
+      - name: Trivy Security Scan - API (SARIF)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest
           format: 'sarif'
           output: 'trivy-api-results.sarif'
 
-      - name: Upload Trivy Results
+      - name: Trivy Security Scan - API (HTML Report)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest
+          format: 'html'
+          output: 'trivy-api-report.html'
+
+      - name: Trivy Security Scan - API (JSON Report)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: ${{ secrets.DOCKER_USERNAME }}/gigshub-api:latest
+          format: 'json'
+          output: 'trivy-api-report.json'
+
+      - name: Upload Trivy Results to Security
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-api-results.sarif'
           category: 'trivy-api'
+
+      - name: Upload Trivy Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-api-reports
+          path: |
+            trivy-api-report.html
+            trivy-api-report.json
+          retention-days: 30
 
       - name: Push to DockerHub - API
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/devops'
@@ -198,6 +250,13 @@ jobs:
           echo "✅ Client Pipeline: ${{ needs.client-pipeline.result }}" >> $GITHUB_STEP_SUMMARY
           echo "✅ API Pipeline: ${{ needs.api-pipeline.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Deliverables" >> $GITHUB_STEP_SUMMARY
           echo "🐳 Docker images pushed to DockerHub" >> $GITHUB_STEP_SUMMARY
           echo "🔒 Security scans completed with Trivy" >> $GITHUB_STEP_SUMMARY
           echo "📊 Code quality analyzed with SonarCloud" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 Available Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- **trivy-client-reports**: Security scan reports for Client (HTML & JSON)" >> $GITHUB_STEP_SUMMARY
+          echo "- **trivy-api-reports**: Security scan reports for API (HTML & JSON)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 Download the artifacts below to view detailed security reports" >> $GITHUB_STEP_SUMMARY
