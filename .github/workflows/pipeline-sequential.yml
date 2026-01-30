@@ -186,21 +186,6 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
 
-      - name: Run Trivy scan (SARIF)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: gigshub-client:${{ github.sha }}
-          format: 'sarif'
-          output: 'client-trivy-results.sarif'
-
-      - name: Run Trivy scan (HTML Report)
-        uses: aquasecurity/trivy-action@master
-        if: always()
-        with:
-          image-ref: gigshub-client:${{ github.sha }}
-          format: 'html'
-          output: 'trivy-client-report.html'
-
       - name: Run Trivy scan (JSON Report)
         uses: aquasecurity/trivy-action@master
         if: always()
@@ -208,6 +193,14 @@ jobs:
           image-ref: gigshub-client:${{ github.sha }}
           format: 'json'
           output: 'trivy-client-report.json'
+
+      - name: Run Trivy scan (SARIF)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: gigshub-client:${{ github.sha }}
+          format: 'sarif'
+          output: 'client-trivy-results.sarif'
 
       - name: Upload Trivy results to Security
         uses: github/codeql-action/upload-sarif@v4
@@ -221,9 +214,7 @@ jobs:
         if: always()
         with:
           name: trivy-client-reports
-          path: |
-            trivy-client-report.html
-            trivy-client-report.json
+          path: trivy-client-report.json
           retention-days: 30
 
   # Stage 8: Push to DockerHub - Client
@@ -364,21 +355,6 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH,MEDIUM'
 
-      - name: Run Trivy scan (SARIF)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: gigshub-api:${{ github.sha }}
-          format: 'sarif'
-          output: 'api-trivy-results.sarif'
-
-      - name: Run Trivy scan (HTML Report)
-        uses: aquasecurity/trivy-action@master
-        if: always()
-        with:
-          image-ref: gigshub-api:${{ github.sha }}
-          format: 'html'
-          output: 'trivy-api-report.html'
-
       - name: Run Trivy scan (JSON Report)
         uses: aquasecurity/trivy-action@master
         if: always()
@@ -386,6 +362,14 @@ jobs:
           image-ref: gigshub-api:${{ github.sha }}
           format: 'json'
           output: 'trivy-api-report.json'
+
+      - name: Run Trivy scan (SARIF)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: gigshub-api:${{ github.sha }}
+          format: 'sarif'
+          output: 'api-trivy-results.sarif'
 
       - name: Upload Trivy results to Security
         uses: github/codeql-action/upload-sarif@v4
@@ -399,9 +383,7 @@ jobs:
         if: always()
         with:
           name: trivy-api-reports
-          path: |
-            trivy-api-report.html
-            trivy-api-report.json
+          path: trivy-api-report.json
           retention-days: 30
 
   # Stage 13: Push to DockerHub - API
