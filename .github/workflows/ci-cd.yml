@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [devops]
   pull_request:
-    branches: [main]
+    branches: [devops]
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
