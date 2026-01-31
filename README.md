@@ -2,6 +2,8 @@
 
 A full-stack freelance marketplace application built with the MERN stack, inspired by Fiverr. Users can buy and sell services (gigs), communicate through messages, and process payments in INR.
 
+> **Note:** For DevOps configurations, Kubernetes deployments, Docker setup, and CI/CD pipelines, please see the [`devops`](https://github.com/JainamSavla/GigsHub/tree/devops) branch.
+
 ## 🚀 Live Demo
 
 - **Frontend:** [https://gigs-hub-one.vercel.app](https://gigs-hub-one.vercel.app)
