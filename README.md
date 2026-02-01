@@ -17,6 +17,28 @@ A full-stack freelance marketplace application with complete DevOps setup includ
 <img width="1429" height="722" alt="image" src="https://github.com/user-attachments/assets/33b295ee-95c7-4f42-9220-13e2bd396cfb" />
 <img width="1421" height="775" alt="image" src="https://github.com/user-attachments/assets/004940e4-3f62-42ba-b65f-aed2aca23b29" />
 
+##Pipeline
+<img width="1320" height="124" alt="image" src="https://github.com/user-attachments/assets/f170a79f-c446-43c2-9504-717951ac006a" />
+<img width="1035" height="252" alt="image" src="https://github.com/user-attachments/assets/9b222388-aa04-4ab0-b059-7aa0189df5ca" />
+
+##Trivy Scan
+<img width="1112" height="443" alt="image" src="https://github.com/user-attachments/assets/3f0853d2-61ec-4a9a-87eb-08a04e1fe4dd" />
+
+##SonarCloud Scan 
+<img width="1169" height="389" alt="image" src="https://github.com/user-attachments/assets/aeeaeef1-68a4-4d85-a493-1a0d8e746b4f" />
+
+## ArgoCd
+<img width="1110" height="336" alt="image" src="https://github.com/user-attachments/assets/edc33945-32c0-4793-9b63-2a32f2c362b6" />
+<img width="700" height="537" alt="image" src="https://github.com/user-attachments/assets/d465128b-3706-4e17-9e98-81e3febcad38" />
+<img width="1048" height="698" alt="image" src="https://github.com/user-attachments/assets/c78aebaf-3a42-42cf-8696-e1976b25845e" />
+
+## Grafana
+<img width="1599" height="780" alt="image" src="https://github.com/user-attachments/assets/10fa0f7d-deb8-4743-a560-2370ef220f89" />
+<img width="1300" height="702" alt="image" src="https://github.com/user-attachments/assets/5afbfa2e-91bb-4cfd-99da-37eef76cc827" />
+<img width="1285" height="670" alt="image" src="https://github.com/user-attachments/assets/e54650e9-3457-4c5f-bb6e-c64a2c2cf0c7" />
+
+
+WORKFLOW FILES
 ## ✨ Features
 
 - **User Authentication** - Register and login with JWT authentication
