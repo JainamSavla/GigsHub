@@ -17,14 +17,14 @@ A full-stack freelance marketplace application with complete DevOps setup includ
 <img width="1429" height="722" alt="image" src="https://github.com/user-attachments/assets/33b295ee-95c7-4f42-9220-13e2bd396cfb" />
 <img width="1421" height="775" alt="image" src="https://github.com/user-attachments/assets/004940e4-3f62-42ba-b65f-aed2aca23b29" />
 
-##Pipeline
+## Pipeline
 <img width="1320" height="124" alt="image" src="https://github.com/user-attachments/assets/f170a79f-c446-43c2-9504-717951ac006a" />
 <img width="1035" height="252" alt="image" src="https://github.com/user-attachments/assets/9b222388-aa04-4ab0-b059-7aa0189df5ca" />
 
-##Trivy Scan
+## Trivy Scan
 <img width="1112" height="443" alt="image" src="https://github.com/user-attachments/assets/3f0853d2-61ec-4a9a-87eb-08a04e1fe4dd" />
 
-##SonarCloud Scan 
+## SonarCloud Scan 
 <img width="1169" height="389" alt="image" src="https://github.com/user-attachments/assets/aeeaeef1-68a4-4d85-a493-1a0d8e746b4f" />
 
 ## ArgoCd
