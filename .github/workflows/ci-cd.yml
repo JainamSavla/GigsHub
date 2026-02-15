@@ -8,7 +8,6 @@ on:
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  GITOPS_REPO: ${{ secrets.GITOPS_REPO }}
 
 jobs:
   build-and-push:
@@ -78,16 +77,17 @@ jobs:
           output: 'trivy-client-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Update GitOps repository
+      - name: Update GitOps branch
         env:
-          GITHUB_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAG: ${{ steps.meta.outputs.tag }}
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           
-          git clone https://${GITHUB_TOKEN}@github.com/${GITOPS_REPO}.git gitops
-          cd gitops
+          # Fetch and checkout gitops branch
+          git fetch origin gitops:gitops
+          git checkout gitops
           
           # Update both values.yaml and values-production.yaml
           sed -i "s|repository: gigshub-api|repository: ${DOCKER_USERNAME}/gigshub-api|g" values-production.yaml
@@ -98,4 +98,4 @@ jobs:
           
           git add values-production.yaml
           git commit -m "Update image tags to ${IMAGE_TAG}" || echo "No changes"
-          git push origin main
+          git push origin gitops
