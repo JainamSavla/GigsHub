@@ -1,0 +1,100 @@
+global:
+  environment: production
+
+# MongoDB - DISABLED (using MongoDB Atlas instead)
+mongodb:
+  enabled: false
+
+api:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: jainamsavla/gigshub-api
+    tag: 20260131-3c007ed  # api
+    pullPolicy: Always
+  service:
+    type: LoadBalancer
+    port: 5000
+    targetPort: 5000
+  env:
+    NODE_ENV: production
+    PORT: "5000"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 5000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 5000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+client:
+  enabled: false  # Frontend is deployed on Vercel
+  replicaCount: 2
+  image:
+    repository: jainamsavla/gigshub-client
+    tag: 20260131-3c007ed  # client
+    pullPolicy: Always
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+
+prometheus:
+  enabled: true
+  image:
+    repository: prom/prometheus
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 9090
+  persistence:
+    enabled: true
+    size: 10Gi
+
+grafana:
+  enabled: true
+  image:
+    repository: grafana/grafana
+    tag: latest
+  service:
+    type: LoadBalancer
+    port: 3000
+  persistence:
+    enabled: true
+    size: 2Gi
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+sealedSecrets:
+  enabled: false

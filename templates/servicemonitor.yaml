@@ -10,7 +10,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: gigshub-api
+      app: api
   endpoints:
     - port: http
       interval: {{ .Values.serviceMonitor.interval }}
