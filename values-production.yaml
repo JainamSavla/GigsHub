@@ -10,7 +10,7 @@ api:
   replicaCount: 3
   image:
     repository: jainamsavla/gigshub-api
-    tag: 20260215-137b8cc  # api
+    tag: 20260215-93c6597  # api
     pullPolicy: Always
   service:
     type: LoadBalancer
@@ -50,7 +50,7 @@ client:
   replicaCount: 2
   image:
     repository: jainamsavla/gigshub-client
-    tag: 20260215-137b8cc  # client
+    tag: 20260215-93c6597  # client
     pullPolicy: Always
   service:
     type: LoadBalancer
