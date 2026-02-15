@@ -12,6 +12,9 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     
     steps:
       - name: Checkout code
@@ -79,7 +82,6 @@ jobs:
 
       - name: Update GitOps branch
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAG: ${{ steps.meta.outputs.tag }}
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -98,4 +100,4 @@ jobs:
           
           git add values-production.yaml
           git commit -m "Update image tags to ${IMAGE_TAG}" || echo "No changes"
-          git push origin gitops
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git gitops
