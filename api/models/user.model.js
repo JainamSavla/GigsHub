@@ -36,6 +36,10 @@ const userSchema = new Schema({
     type: Boolean,
     default:false
   },
+  stripeAccountId: {
+    type: String,
+    required: false,
+  },
 },{
   timestamps:true
 });

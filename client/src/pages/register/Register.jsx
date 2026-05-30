@@ -14,7 +14,9 @@ function Register() {
     country: "",
     isSeller: false,
     desc: "",
+    stripeAccountId: "",
   });
+  const [error, setError] = useState(null);
 
   const navigate = useNavigate();
 
@@ -32,6 +34,11 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (user.isSeller && !user.stripeAccountId) {
+      setError("Please add your Stripe payout account ID.");
+      return;
+    }
+
     let url = "";
     if (file) {
       url = await upload(file);
@@ -44,6 +51,7 @@ function Register() {
       });
       navigate("/");
     } catch (err) {
+      setError(err.response?.data || "Registration failed.");
       console.log(err);
     }
   };
@@ -104,6 +112,18 @@ function Register() {
             rows="10"
             onChange={handleChange}
           ></textarea>
+          {user.isSeller && (
+            <>
+              <label htmlFor="">Stripe Account ID</label>
+              <input
+                name="stripeAccountId"
+                type="text"
+                placeholder="acct_1234..."
+                onChange={handleChange}
+              />
+            </>
+          )}
+          {error && <div className="error">{error}</div>}
         </div>
       </form>
     </div>

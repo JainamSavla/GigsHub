@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken";
 
 export const register = async (req, res, next) => {
   try {
+    if (req.body.isSeller && !req.body.stripeAccountId) {
+      return next(createError(400, "Seller payout account is required."));
+    }
+
     const hash = bcrypt.hashSync(req.body.password, 5);
     const newUser = new User({
       ...req.body,
@@ -35,12 +39,14 @@ export const login = async (req, res, next) => {
       process.env.JWT_KEY
     );
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     const { password, ...info } = user._doc;
     res
       .cookie("accessToken", token, {
         httpOnly: true,
-        sameSite: "none",
-        secure: true,
+        sameSite: isProduction ? "none" : "lax",
+        secure: isProduction,
       })
       .status(200)
       .send(info);
@@ -50,10 +56,12 @@ export const login = async (req, res, next) => {
 };
 
 export const logout = async (req, res) => {
+  const isProduction = process.env.NODE_ENV === "production";
+
   res
     .clearCookie("accessToken", {
-      sameSite: "none",
-      secure: true,
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
     })
     .status(200)
     .send("User has been logged out.");
