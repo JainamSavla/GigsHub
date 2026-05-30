@@ -5,11 +5,9 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import newRequest from "../../utils/newRequest";
 import Reviews from "../../components/reviews/Reviews";
-import getCurrentUser from "../../utils/getCurrentUser";
 
 function Gig() {
   const { id } = useParams();
-  const currentUser = getCurrentUser();
 
   const { isLoading, error, data } = useQuery({
     queryKey: ["gig"],
@@ -158,11 +156,9 @@ function Gig() {
                 </div>
               ))}
             </div>
-            {!currentUser?.isSeller && (
-              <Link to={`/pay/${id}`}>
-                <button>Continue</button>
-              </Link>
-            )}
+            <Link to={`/pay/${id}`}>
+              <button>Continue</button>
+            </Link>
           </div>
         </div>
       )}
