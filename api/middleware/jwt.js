@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import createError from "../utils/createError.js";
+import User from "../models/user.model.js";
 
 export const verifyToken = (req, res, next) => {
   const token = req.cookies.accessToken;
@@ -7,9 +8,13 @@ export const verifyToken = (req, res, next) => {
 
 
   jwt.verify(token, process.env.JWT_KEY, async (err, payload) => {
-    if (err) return next(createError(403,"Token is not valid!"))
+    if (err) return next(createError(403, "Token is not valid!"));
+
+    const user = await User.findById(payload.id).select("isSeller");
+    if (!user) return next(createError(401, "User not found."));
+
     req.userId = payload.id;
-    req.isSeller = payload.isSeller;
-    next()
+    req.isSeller = user.isSeller;
+    next();
   });
 };
